@@ -1,0 +1,65 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Create Keystore
+        run: |
+          keytool -genkey -v \
+            -keystore bushratak.keystore \
+            -alias bushratak \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Moutaz, OU=bushratak, O=bushratak, L=Unknown, ST=Unknown, C=Unknown" \
+            -storepass bushratak123 \
+            -keypass bushratak123
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Init Bubblewrap
+        run: |
+          bubblewrap init \
+            --manifest https://684mo57-commits.github.io/bushratak/manifest.json \
+            --directory ./twa
+
+      - name: Build APK
+        run: |
+          cd twa
+          bubblewrap build \
+            --skipPwaValidation
+
+      - name: Sign APK
+        run: |
+          cd twa
+          apksigner sign \
+            --ks ../bushratak.keystore \
+            --ks-key-alias bushratak \
+            --ks-pass pass:bushratak123 \
+            --key-pass pass:bushratak123 \
+            --out bushratak-signed.apk \
+            app-release-unsigned.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: bushratak-apk
+          path: twa/bushratak-signed.apk
