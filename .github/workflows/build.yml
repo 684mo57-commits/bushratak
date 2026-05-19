@@ -59,7 +59,7 @@ jobs:
             app-release-unsigned.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: bushratak-apk
           path: twa/bushratak-signed.apk
